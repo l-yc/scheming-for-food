@@ -1,15 +1,6 @@
-(load "src/utils.scm")
+(load "utils.scm")
 
-(define-record-type <ingredient>
-  (make-ingredient name)
-  ingredient?
-  (name ingredient-name))
-
-(define-print-method ingredient?
-  (standard-print-method
-   "ingredient"
-   (lambda (i)
-     `(("name" ,(ingredient-name i))))))
+;; define quantity
 
 (define-record-type <quantity>
   (%make-quantity amount unit)
