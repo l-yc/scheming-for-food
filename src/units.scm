@@ -9,7 +9,7 @@
   (unit quantity-unit))
 
 (define (make-quantity amount unit)
-  (assert (unit? unit) "make-quantity: received invalid unit")
+  (assert (unit? unit) "make-quantity: received invalid unit" unit)
   (%make-quantity amount unit))
 
 (define-print-method
@@ -24,7 +24,9 @@
 (define (unit? thing)
   (or (in? '(tsp tbsp floz cup pt qt gal ml l) thing) ;; Volume
       (in? '(oz lb g kg) thing)                       ;; Weight
-      (in? '(F C) thing)))                            ;; Temperature
+      (in? '(F C) thing)                              ;; Temperature
+
+      (in? '(pinch jar taste clove) thing)))          ;; Misc???
 
 ;; Given a unit, returns the canonical unit that should be used in place of it.
 (define (canonical-unit unit)
