@@ -1,7 +1,7 @@
 (load "utils.scm")
 (load "ingredient.scm")
 (load "data_loader.scm")
-(load "units.scm")
+;(load "units.scm")
 
 ;; define recipe
 (define-record-type <recipe-item>
@@ -24,11 +24,15 @@
 
 
 (define (lookup-ingredient name)
+  (assert (string? name))
   (find (lambda (ingredient)
 	  (string=? (ingredient-name ingredient) name))
 	ingredients-list))
 
 (define (make-recipe-item ingredient-name amount unit)
+  (assert (string? ingredient-name))
+  (assert (number? amount))
+  (assert (unit? unit))
   (let ((ingredient (lookup-ingredient ingredient-name)))
     (%make-recipe-item ingredient (make-quantity amount unit))))
 
@@ -87,3 +91,10 @@
     (make-recipe-item "brown sugar" 1.25 'cup)
     (make-recipe-item "ground ginger" 0.83 'tbsp)
   ))
+
+(pp spicy-roasted-green-beans-recipe)
+
+(define recipes
+  (list crispy-baked-chicken-thighs-recipe
+	penne-cinque-pi-recipe
+	spicy-roasted-green-beans-recipe))

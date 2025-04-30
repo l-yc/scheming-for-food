@@ -8,6 +8,8 @@
   (if print-dbg
       (pp (list 'debug: tag args))))
 
+(define (guarantee predicate arg)
+  (assert (predicate arg)))
 
 ;; list
 ;; Check if x is a member of l
