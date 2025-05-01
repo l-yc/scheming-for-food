@@ -1,16 +1,19 @@
 // paste this snippet into the developer console
 // to get the German House recipes as scheme code
-//
-;(function extractAndLogRecipesOnly(){
+
+;(function extractAndLogRecipesAsMakeRecipe(){
   const recipes = [];
+  // helper to slugify titles for the define name
   const slugify = s => s.trim().toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
 
-  // 1. Gather each recipe’s items
+  // 1. Gather each recipe’s title and items
   document.querySelectorAll('.recipe-container').forEach(card => {
-    const title = card.querySelector('.card-header h2')?.textContent || '';
-    const recipeSlug = slugify(title);
+    const titleEl = card.querySelector('.card-header h2');
+    if (!titleEl) return;
+    const titleText = titleEl.textContent.trim();
+    const recipeSlug = slugify(titleText);
 
     const items = Array.from(card.querySelectorAll('tr.quantity')).map(tr => {
       const mag  = tr.querySelector('.magnitude').textContent.trim();
@@ -20,22 +23,32 @@
     });
 
     if (items.length) {
-      recipes.push({ recipeSlug, items });
+      recipes.push({ recipeSlug, titleText, items });
     }
   });
 
-  // 2. Build output lines for recipes only
+  // 2. Build output lines using (make-recipe ...)
   const lines = [];
-  recipes.forEach(({ recipeSlug, items }) => {
+  recipes.forEach(({ recipeSlug, titleText, items }) => {
     lines.push(`(define ${recipeSlug}-recipe`);
-    lines.push(`  (list`);
+    lines.push(`  (make-recipe`);
+    lines.push(`   "${titleText}"`);
+    lines.push(`   (list`);
     items.forEach(({ orig, mag, unit }) => {
       lines.push(`    (make-recipe-item "${orig}" ${mag} '${unit})`);
     });
-    lines.push(`  ))`);
+    lines.push(`   )))`);
     lines.push('');  // blank line between recipes
   });
 
-  // 3. Single console.log for easy copy
+  // 3. Add a master list of all recipes
+  if (recipes.length) {
+    const names = recipes.map(r => `${r.recipeSlug}-recipe`);
+    lines.push(`(define recipes`);
+    lines.push(`  (list ${names.join('\n\t')})`);
+  }
+
+  // 4. Single console.log for easy copy
   console.log(lines.join('\n'));
 })();
+
