@@ -1,5 +1,6 @@
 (load "utils.scm")
 (load "ingredient.scm")
+(load "data/ingredients.scm")
      
 ;; Ref: https://stackoverflow.com/questions/55694462/how-do-i-read-a-text-file-in-mit-gnu-scheme
 (define (read-lines-to-list filename)
@@ -24,6 +25,14 @@
 (define
   ingredients-list
   (map make-simple-ingredient ingredients-names))
+
+(define
+  ingredients-list-v2
+  (map (lambda (item)
+	 (let ((name (car item))
+	       (tags (cdr item)))
+	   (make-ingredient name tags))) tagged-ingredients))
+
 
 ;; Gets the ingredient object for the ingredient with the given name in
 ;; ingredients-list

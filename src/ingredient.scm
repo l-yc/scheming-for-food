@@ -3,10 +3,9 @@
 ;;; Ingredients
 
 (define-record-type <ingredient>
-  (%make-ingredient canonical-name names tags)
+  (%make-ingredient canonical-name tags)
   ingredient?
   (canonical-name ingredient-name)
-  (names ingredient-aliases)
   (tags ingredient-tags))
 
 (define-print-method ingredient?
@@ -18,13 +17,11 @@
 (define (make-simple-ingredient name)
   (make-ingredient name '() '()))
 
-(define (make-ingredient canonical-name names tags)
+(define (make-ingredient canonical-name tags)
   (assert (string? canonical-name))
-  (assert (and (list? names)
-               (every string? names)))
   (assert (and (list? tags)
            (every symbol? tags)))
-  (%make-ingredient canonical-name names tags))
+  (%make-ingredient canonical-name tags))
 
 ;; define ingredients relations
 
