@@ -12,10 +12,11 @@
   (standard-print-method
    "ingredient"
    (lambda (i)
-     `(("name" ,(ingredient-name i))))))
+     `(("name" ,(ingredient-name i))
+       ("tags" ,(ingredient-tags i))))))
 
 (define (make-simple-ingredient name)
-  (make-ingredient name '() '()))
+  (make-ingredient name '()))
 
 (define (make-ingredient canonical-name tags)
   (assert (string? canonical-name))
