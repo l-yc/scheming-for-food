@@ -1,14 +1,29 @@
 (load "utils.scm")
 (load "ingredient.scm")
 (load "data_loader.scm")
-;(load "units.scm")
+(load "units.scm")
 
 ;; define recipe
+(define (constant-scaling-rule? r) (eq? 'constant r))
+(define (linear-scaling-rule? r)
+  (and (pair? r)
+       (eq? 'linear (car r))
+       (number? (cdr r))))
+(define (scaling-rule? r)
+  (or (constant-scaling-rule? r)
+      (linear-scaling-rule? r)))
+
+(expect (constant-scaling-rule? 'constant) #t)
+(expect (constant-scaling-rule? 'linear) #f)
+(expect (linear-scaling-rule? (cons 'linear 2)) #t)
+(expect (linear-scaling-rule? (cons 'linear 'a)) #t)
+
 (define-record-type <recipe-item>
-  (%make-recipe-item ingredient quantity)
+  (%make-recipe-item ingredient quantity scaling-rule)
   recipe-item?
   (ingredient recipe-item-ingredient)
-  (quantity recipe-item-quantity))
+  (quantity recipe-item-quantity)
+  (scaling-rule recipe-item-scaling-rule))
 
 (define-print-method recipe-item?
   (standard-print-method
@@ -18,10 +33,11 @@
 
 
 (define-record-type <recipe>
-  (%make-recipe name items)
+  (%make-recipe name items provenance)
   recipe?
   (name recipe-name)
-  (items recipe-items))
+  (items recipe-items)
+  (provenance recipe-provenance))
 
 (define-print-method recipe?
   (standard-print-method
@@ -29,11 +45,11 @@
    (lambda (r)
      `(("name" ,(recipe-name r))))))
 
-(define (make-recipe name items)
+(define (make-recipe name items provenance)
   (guarantee string? name)
   (guarantee list? items)
   (guarantee (lambda (lst) (every recipe-item? lst)) items)
-  (%make-recipe name items))
+  (%make-recipe name items provenance))
 
 
 
@@ -44,13 +60,23 @@
 	  (string=? (ingredient-name ingredient) name))
 	ingredients-list))
 
-(define (make-recipe-item name amount unit)
-  (assert (string? name))
-  (assert (number? amount))
-  (assert (unit? unit))
-  (let ((ingredient (lookup-ingredient name)))
-    (assert ingredient "recipe contains unknown ingredient:" name)
-    (%make-recipe-item ingredient (make-quantity amount unit))))
+(define (make-recipe-item . args)
+  (define (the-constructor name amount unit rule)
+    (assert (string? name))
+    (assert (number? amount))
+    (assert (unit? unit))
+    (assert (scaling-rule? rule))
+    (let ((ingredient (lookup-ingredient name)))
+	(assert ingredient "recipe contains unknown ingredient:" name)
+	(%make-recipe-item ingredient (make-quantity amount unit) rule)))
+
+  (let ((l (length args)))
+    (assert (> l 2) "make-recipe-item should be called with at least 3 args")
+    (assert (< l 5) "make-recipe-item should be called with at most 4 args")
+    (apply the-constructor
+	   (if (= l 3)
+	       (append args (list (cons 'linear 1)))
+	       args))))
 
 ;; tests
 
@@ -60,8 +86,8 @@
 
 (define rice-and-beans-recipe
  (list 
-  (%make-recipe-item rice (make-quantity 1 'cup))
-  (%make-recipe-item beans (make-quantity 1 'cup))))
+  (%make-recipe-item rice (make-quantity 1 'cup) "none")
+  (%make-recipe-item beans (make-quantity 1 'cup) "none")))
 
 (pp rice-and-beans-recipe)
 
@@ -83,7 +109,10 @@
     (make-recipe-item "paprika" 1.67 'tbsp)
     (make-recipe-item "salt" 3.33 'tbsp)
     (make-recipe-item "tofu" 1 'lb)
-   )))
+    )
+   "https://dh.mit.edu/recipes/928/"
+   )
+  )
 
 (define penne-cinque-pi-recipe
   (make-recipe
@@ -107,7 +136,10 @@
     (make-recipe-item "pepper" 0 'pinch)
     ;(make-recipe-item "Tomato pasta sauce" 0.5 'jar)
     (make-recipe-item "tomato pasta sauce" 0.5 'jar)
-   )))
+    )
+   "https://dh.mit.edu/recipes/1465/"
+   )
+  )
 
 (define spicy-roasted-green-beans-recipe
   (make-recipe
@@ -123,7 +155,10 @@
     (make-recipe-item "soy sauce" 0.62 'cup)
     (make-recipe-item "brown sugar" 1.25 'cup)
     (make-recipe-item "ground ginger" 0.83 'tbsp)
-   )))
+    )
+   "https://dh.mit.edu/recipes/1462/"
+   )
+  )
 
 (define recipes
   (list crispy-baked-chicken-thighs-recipe
