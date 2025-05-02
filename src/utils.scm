@@ -7,9 +7,6 @@
   (if print-dbg
       (pp (list 'debug: tag args))))
 
-(define (guarantee predicate arg)
-  (assert (predicate arg)))
-
 ;; Removes duplicates from a sorted list of strings
 (define (unique-sorted sorted-lst)
   (let loop ((lst sorted-lst)

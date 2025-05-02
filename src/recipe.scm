@@ -49,9 +49,9 @@
             "make-recipe-item should be called with 3 or 4 args \
             (the 4th is an optional scaling rule)")
     (apply the-constructor
-	   (if (= nargs 3)
-	       (append args (list (cons 'linear 1)))
-	       args))))
+     (if (= nargs 3)
+         (append args (list (cons 'linear 1)))
+         args))))
 
 ;;; Recipes
 
@@ -69,7 +69,7 @@
      `(("name" ,(recipe-name r))))))
 
 (define (make-recipe name items provenance)
-  (guarantee string? name)
-  (guarantee list? items)
-  (guarantee (lambda (lst) (every recipe-item? lst)) items)
+  (assert (string? name))
+  (assert (list? items))
+  (assert ((lambda (lst) (every recipe-item? lst)) items))
   (%make-recipe name items provenance))
