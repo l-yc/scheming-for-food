@@ -29,9 +29,9 @@
 (define
   ingredients-list-v2
   (map (lambda (item)
-	 (let ((name (car item))
-	       (tags (cdr item)))
-	   (make-ingredient name tags))) tagged-ingredients))
+        (let ((name (car item))
+              (tags (cdr item)))
+           (make-ingredient name tags))) tagged-ingredients))
 
 
 ;; Gets the ingredient object for the ingredient with the given name in
@@ -40,6 +40,6 @@
   (assert (string? name))
   (find (lambda (ingredient)
          (string=? (ingredient-name ingredient) name))
-	ingredients-list))
+   ingredients-list-v2))
 
 ;; TODO probably should start adding relations
