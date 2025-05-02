@@ -1,4 +1,5 @@
 (load "utils.scm")
+(load "units.scm")
 
 ;; searching recipes
 (define (find-recipes-with name)
@@ -17,13 +18,12 @@
 ;; summarizing recipes
 (define (add-recipe-items i1 i2)
   (let ((i (recipe-item-ingredient i1))
-	(q1 (recipe-item-quantity i1))
-	(q2 (recipe-item-quantity i2)))
-    ;; FIXME  need to handle unit conversion?
-    ;;(assert (eq? (quantity-unit q1) (quantity-unit q2)))
+	(q1 (canonicalize-quantity (recipe-item-quantity i1)))
+	(q2 (canonicalize-quantity (recipe-item-quantity i2))))
     (make-recipe-item (ingredient-name i)
 		      (+ (quantity-amount q1) (quantity-amount q2))
 		      (quantity-unit q2))))
+
   
 (define (get-shopping-list-of recipes)
   (let* ((ingredients (filter
@@ -36,11 +36,16 @@
     	    (cond ((null? shopping-list) (cons item shopping-list))
     		  ((string=? (ingredient-name (recipe-item-ingredient (car shopping-list)))
     			     (ingredient-name (recipe-item-ingredient item)))
+		   (begin
 		   (let ((res (add-recipe-items (car shopping-list) item)))
-		     (cons res (cdr shopping-list))))
+		     (cons res (cdr shopping-list)))
+		   )
+
+		   )
     		  (else (cons item shopping-list))))
     	  '()
     	  sorted)))
+
 
 (pp (get-shopping-list-of recipes))
 

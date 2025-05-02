@@ -1,4 +1,5 @@
 (load "utils.scm")
+(load "ingredient.scm")
      
 ;; Ref: https://stackoverflow.com/questions/55694462/how-do-i-read-a-text-file-in-mit-gnu-scheme
 (define (read-lines-to-list filename)
@@ -30,6 +31,6 @@
   (assert (string? name))
   (find (lambda (ingredient)
          (string=? (ingredient-name ingredient) name))
-   ingredients-list))
+	ingredients-list))
 
 ;; TODO probably should start adding relations

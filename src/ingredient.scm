@@ -1,5 +1,4 @@
 (load "utils.scm")
-(load "data_loader.scm")
 
 ;;; Ingredients
 
@@ -45,38 +44,38 @@
 ;      (((tag-supersets tag) 'add-element!) superset))
 ;  (hash-table-clear! tag<=-cache))
 
-(define the-table (make-equal-hash-table))
-
-(hash-table-set!
- the-table
- (cons (ingredient-by-name "scallions")
-       (ingredient-by-name "green onion"))
- #t)
-
-(hash-table-ref
- the-table
- (cons (ingredient-by-name "scallions")
-       (ingredient-by-name "green onion")))
-
-;(hash-table-intern!
-;    (ingredient-by-name "scallions")
-;    (ingredient-by-name "green onion")
+;(define the-table (make-equal-hash-table))
+;
+;(hash-table-set!
 ; the-table
-
-;; these are related ingredients
-(ingredient-by-name "garlic")
-(ingredient-by-name "garlic cloves")
-(ingredient-by-name "garlic powder")
-
-;; these should be equal
-(ingredient-by-name "scallions")
-(ingredient-by-name "green onion")
-
-(ingredient-by-name "heavy cream")
-(ingredient-by-name "heavy whipping cream")
-
-;; these should be tagged with protein
-(ingredient-by-name "chicken thighs")
-(ingredient-by-name "chicken breasts")
-(ingredient-by-name "tofu")
-(ingredient-by-name "soft tofu")
+; (cons (ingredient-by-name "scallions")
+;       (ingredient-by-name "green onion"))
+; #t)
+;
+;(hash-table-ref
+; the-table
+; (cons (ingredient-by-name "scallions")
+;       (ingredient-by-name "green onion")))
+;
+;;(hash-table-intern!
+;;    (ingredient-by-name "scallions")
+;;    (ingredient-by-name "green onion")
+;; the-table
+;
+;;; these are related ingredients
+;(ingredient-by-name "garlic")
+;(ingredient-by-name "garlic cloves")
+;(ingredient-by-name "garlic powder")
+;
+;;; these should be equal
+;(ingredient-by-name "scallions")
+;(ingredient-by-name "green onion")
+;
+;(ingredient-by-name "heavy cream")
+;(ingredient-by-name "heavy whipping cream")
+;
+;;; these should be tagged with protein
+;(ingredient-by-name "chicken thighs")
+;(ingredient-by-name "chicken breasts")
+;(ingredient-by-name "tofu")
+;(ingredient-by-name "soft tofu")

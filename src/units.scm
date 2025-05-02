@@ -22,16 +22,16 @@
 
 ;; Units are represented as symbols
 (define (unit? thing)
-  (or (member '(tsp tbsp floz cup pt qt gal ml l) thing) ;; Volume
-      (member '(oz lb g kg) thing)                       ;; Weight
-      (member '(F C) thing)                              ;; Temperature
+  (or (member thing '(pinch taste tsp tbsp floz cup pt qt gal ml l)) ;; Volume
+      (member thing '(oz lb g kg))                       ;; Weight
+      (member thing '(F C))                              ;; Temperature
 
-      (member '(pinch jar taste clove) thing)))          ;; Misc???
+      (member thing '(jar clove))))          ;; Misc???
 
 ;; Given a unit, returns the canonical unit that should be used in place of it.
 (define (canonical-unit unit)
   (case unit
-    ((tsp tbsp floz cup pt qt gal ml l) 'ml)
+    ((pinch taste tsp tbsp floz cup pt qt gal ml l) 'ml)
     ((oz lb g kg) 'g)
     ((F C) 'C)
     (else (error "canonical-unit: unknown unit" unit))))
@@ -47,6 +47,8 @@
     (lambda (x) (* x factor)))
   (case unit
     ;; Volume: canonical unit mL
+    ((pinch) (times-by 0.308058)) 
+    ((taste) (times-by 0.616115))
     ((tsp)  (times-by 4.928922))
     ((tbsp) (times-by 14.78677))
     ((floz) (times-by 29.57353))
