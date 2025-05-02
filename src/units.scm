@@ -22,11 +22,11 @@
 
 ;; Units are represented as symbols
 (define (unit? thing)
-  (or (in? '(tsp tbsp floz cup pt qt gal ml l) thing) ;; Volume
-      (in? '(oz lb g kg) thing)                       ;; Weight
-      (in? '(F C) thing)                              ;; Temperature
+  (or (member '(tsp tbsp floz cup pt qt gal ml l) thing) ;; Volume
+      (member '(oz lb g kg) thing)                       ;; Weight
+      (member '(F C) thing)                              ;; Temperature
 
-      (in? '(pinch jar taste clove) thing)))          ;; Misc???
+      (member '(pinch jar taste clove) thing)))          ;; Misc???
 
 ;; Given a unit, returns the canonical unit that should be used in place of it.
 (define (canonical-unit unit)

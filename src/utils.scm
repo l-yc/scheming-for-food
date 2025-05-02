@@ -1,4 +1,3 @@
-;; debug
 (define print-dbg #t)
 
 (define (expect a b)
@@ -11,16 +10,10 @@
 (define (guarantee predicate arg)
   (assert (predicate arg)))
 
-;; list
-;; Check if x is a member of l
-(define (in? l x)
-  (if (memv x l) #t #f))
-
-
+;; Removes duplicates from a sorted list of strings
 (define (unique-sorted sorted-lst)
   (let loop ((lst sorted-lst)
-	     (prv ""))
-					;(dbg 'loop (car lst) prv)
+             (prv ""))
     (cond ((null? lst) '())
-	  ((string=? prv (car lst)) (loop (cdr lst) prv))
-	  (else (cons (car lst) (loop (cdr lst) (car lst)))))))
+     ((string=? prv (car lst)) (loop (cdr lst) prv))
+     (else (cons (car lst) (loop (cdr lst) (car lst)))))))

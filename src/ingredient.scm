@@ -1,6 +1,8 @@
 (load "utils.scm")
+(load "data_loader.scm")
 
-;; define ingredient object
+;;; Ingredients
+
 (define-record-type <ingredient>
   (%make-ingredient canonical-name names tags)
   ingredient?
@@ -20,16 +22,10 @@
 (define (make-ingredient canonical-name names tags)
   (assert (string? canonical-name))
   (assert (and (list? names)
-	       (every string? names)))
+               (every string? names)))
   (assert (and (list? tags)
-	       (every symbol? tags)))
+           (every symbol? tags)))
   (%make-ingredient canonical-name names tags))
-
-
-;; tests
-(define chicken (make-simple-ingredient "chicken"))
-(display chicken)
-
 
 ;; define ingredients relations
 
@@ -53,36 +49,34 @@
 
 (hash-table-set!
  the-table
- (cons (lookup-ingredient "scallions")
-       (lookup-ingredient "green onion"))
+ (cons (ingredient-by-name "scallions")
+       (ingredient-by-name "green onion"))
  #t)
 
 (hash-table-ref
  the-table
- (cons (lookup-ingredient "scallions")
-       (lookup-ingredient "green onion")))
+ (cons (ingredient-by-name "scallions")
+       (ingredient-by-name "green onion")))
 
 ;(hash-table-intern!
-;    (lookup-ingredient "scallions")
-;    (lookup-ingredient "green onion")
+;    (ingredient-by-name "scallions")
+;    (ingredient-by-name "green onion")
 ; the-table
 
-(pp hash-table-clear!)
-
 ;; these are related ingredients
-(lookup-ingredient "garlic")
-(lookup-ingredient "garlic cloves")
-(lookup-ingredient "garlic powder")
+(ingredient-by-name "garlic")
+(ingredient-by-name "garlic cloves")
+(ingredient-by-name "garlic powder")
 
 ;; these should be equal
-(lookup-ingredient "scallions")
-(lookup-ingredient "green onion")
+(ingredient-by-name "scallions")
+(ingredient-by-name "green onion")
 
-(lookup-ingredient "heavy cream")
-(lookup-ingredient "heavy whipping cream")
+(ingredient-by-name "heavy cream")
+(ingredient-by-name "heavy whipping cream")
 
 ;; these should be tagged with protein
-(lookup-ingredient "chicken thighs")
-(lookup-ingredient "chicken breasts")
-(lookup-ingredient "tofu")
-(lookup-ingredient "soft tofu")
+(ingredient-by-name "chicken thighs")
+(ingredient-by-name "chicken breasts")
+(ingredient-by-name "tofu")
+(ingredient-by-name "soft tofu")
