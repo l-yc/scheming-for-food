@@ -60,19 +60,26 @@
       ((ing-is) (any
                   (lambda (tag) (eqv? tag (cadr query)))
                   tags))
-      ((ing-and) (fold-left
-                   and2
-                   #t
-                   (map (lambda (tag)
-                          (restr:check-ingredient (ing-is tag) ingredient))
-                        (cdr query))))
-      ((ing-or) (fold-left
-                  or2
-                  #f
-                  (map (lambda (tag)
-                         (restr:check-ingredient (ing-is tag) ingredient))
-                       (cdr query)))))))
+      ((ing-and) (list:and (map (lambda (q)
+                                  (restr:check-ingredient q ingredient))
+                                (cdr query))))
+      ((ing-or) (list:or (map (lambda (q)
+                                (restr:check-ingredient q ingredient))
+                              (cdr query)))))))
 
+;; Quick inline tests. TODO: move to other file
+(define pep (ingredient-by-name "thai chili pepper fresh"))
+(assert (restr:check-ingredient (ing-is 'spicy) pep))
+(assert (restr:check-ingredient (ing-and
+                                  (ing-is 'spicy)
+                                  (ing-is 'vegetable))
+                               pep))
+(assert (restr:check-ingredient (ing-or
+                                  (ing-is 'pork) ;; false
+                                  (ing-is 'vegetable))
+                               pep))
+
+;; TODO: move this to recipe.scm?
 (define (recipe-ingredients recipe)
   (map recipe-item-ingredient (recipe-items recipe)))
 
