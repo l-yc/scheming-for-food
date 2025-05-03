@@ -56,16 +56,17 @@
 
 (define (restr:check-ingredient query ingredient)
   (let ((tags (ingredient-tags ingredient)))
-    (case (car query)
-      ((ing-is) (any
-                  (lambda (tag) (eqv? tag (cadr query)))
-                  tags))
-      ((ing-and) (list:and (map (lambda (q)
-                                  (restr:check-ingredient q ingredient))
-                                (cdr query))))
-      ((ing-or) (list:or (map (lambda (q)
-                                (restr:check-ingredient q ingredient))
-                              (cdr query)))))))
+    (and (not (null? tags))
+         (case (car query)
+           ((ing-is) (any
+                      (lambda (tag) (eqv? tag (cadr query)))
+                      tags))
+           ((ing-and) (list:and (map (lambda (q)
+                                       (restr:check-ingredient q ingredient))
+                                     (cdr query))))
+           ((ing-or) (list:or (map (lambda (q)
+                                     (restr:check-ingredient q ingredient))
+                                   (cdr query))))))))
 
 ;; Quick inline tests. TODO: move to other file
 (define pep (ingredient-by-name "thai chili pepper fresh"))
