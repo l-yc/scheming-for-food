@@ -1,4 +1,5 @@
 (load "data_loader.scm")
+(load "recipe.scm")
 
 (define (restriction? obj)
   (and (list obj)
@@ -18,11 +19,11 @@
 ;;; Recipe predicates
 
 (define (recip-all . restrs)
-  (cons 'restr-all restrs))
+  (cons 'recip-all restrs))
 (define (recip-any . restrs)
-  (cons 'restr-any restrs))
+  (cons 'recip-any restrs))
 (define (recip-only-one . restrs)
-  (cons 'restr-only-one restrs))
+  (cons 'recip-only-one restrs))
 
 ;;; General Predicates
 (define (restr-not restr)
@@ -66,7 +67,8 @@
                                      (cdr query))))
            ((ing-or) (list:or (map (lambda (q)
                                      (restr:check-ingredient q ingredient))
-                                   (cdr query))))))))
+                                   (cdr query))))
+           (else (error "restr:check-ingredient invalid query" query))))))
 
 ;; Quick inline tests. TODO: move to other file
 (define pep (ingredient-by-name "thai chili pepper fresh"))
@@ -80,28 +82,23 @@
                                   (ing-is 'vegetable))
                                pep))
 
-;; TODO: move this to recipe.scm?
-(define (recipe-ingredients recipe)
-  (map recipe-item-ingredient (recipe-items recipe)))
+(define (restr:applies-to-all-ingredients query recipe)
+  (list:and (map (lambda (item)
+                   (restr:check-ingredient
+                     query
+                     (recipe-item-ingredient item)))
+                 (recipe-items recipe))))
+
+(define (restr:applies-to-any-ingredients query recipe)
+  (list:or (map (lambda (item)
+                  (restr:check-ingredient
+                    query
+                    (recipe-item-ingredient item)))
+                (recipe-items recipe))))
 
 (define (restr:check-recipe-rule query recipe)
-  (let ((ings (recipe-ingredients recipe)))
-    (case (car query)
-      ((recip-all) (list-and (map (lambda (q)
-                                    (map (lambda (ing) (restr:check-ingredient q ing))
-                                         ings))
-                                  (cdr query))))
-      ((recip-any) (list-or (map (lambda (q)
-                                   (map (lambda (ing) (restr:check-ingredient q ing))
-                                        ings))
-                                 (cdr query)))) 
-      ((recip-only-one) (assert #f "unimplemented")))))
-
-(define (restr:check-recipe-rules query ingredient)
   (case (car query)
-    ((not) (not (restr:check-recipe-rule
-                  (cadr query)
-                  ingredient)))
-    (else (restr:check-recipe-rule
-            query
-            ingredient))))
+    ((recip-all) (restr:applies-to-all-ingredients (cadr query) recipe))
+    ((recip-any) (restr:applies-to-any-ingredients (cadr query) recipe)) 
+    ((recip-only-one) (assert #f "unimplemented"))
+    (else (error "restr:check-recipe-rule: invalid query" query))))
