@@ -1,6 +1,7 @@
 (load "utils.scm")
 (load "ingredient.scm")
-(load "data/ingredients.scm")
+;(load "data/ingredients.scm")
+(load "data/ingredients_sorted_tagged_nodup.scm")
      
 ;; Ref: https://stackoverflow.com/questions/55694462/how-do-i-read-a-text-file-in-mit-gnu-scheme
 (define (read-lines-to-list filename)
