@@ -28,74 +28,74 @@
 ;;; Ingredient predicates
 
 ;; Check whether an ingredient has a specific tag.
-(define (ing-is tag)
-  (list 'ing-is tag))
+(define (is-tag tag)
+  (list 'is-tag tag))
 
-(define (ing-not condition)
-  (list 'ing-not condition))
+(define (not-tag condition)
+  (list 'not-tag condition))
 
 ;; Check whether an ingredient meets *all* the listed conditions.
-(define (ing-all . tags)
-  (cons 'ing-all tags))
+(define (all-tags . tags)
+  (cons 'all-tags tags))
 
 ;; Check whether an ingredient meets *any* of the listed conditions.
-(define (ing-any . tags)
-  (cons 'ing-any tags))
+(define (any-tags . tags)
+  (cons 'any-tags tags))
 
 ;;; Recipe predicates
 
-(define (recip-not condition)
- (list 'recip-not condition))
+(define (all-ings-are-not condition)
+ (list 'all-ings-are-not condition))
 
 ;; Checks whether *all* ingredients in the recipe meet *all* of the listed
 ;; criteria.
-(define (recip-all . restrs)
-  (cons 'recip-all restrs))
+(define (all-ings-are-all-of . restrs)
+  (cons 'all-ings-are-all-of restrs))
 
 ;; Checks whether *all* ingredients in the recipe meet *any* of the listed
 ;; criteria.
-(define (recip-any . restrs)
-  (cons 'recip-any restrs))
+(define (all-ings-are-any-of . restrs)
+  (cons 'all-ings-are-any-of restrs))
 
 ;; Checks if the number of conditions that are true is in [lo, hi). #f as hi
 ;; means no upper bound.
-(define (recip-n-true lo hi . restrs)
-  (cons 'recip-n-true (cons lo (cons hi restrs))))
+(define (ings-in-between lo hi . restrs)
+  (cons 'ings-in-between (cons lo (cons hi restrs))))
 
-(define (recip-at-most hi . restrs)
-  (apply recip-n-true
+(define (ings-at-most hi . restrs)
+  (apply ings-in-between
          (cons 0 (cons (+ hi 1) restrs))))
 
-(define (recip-at-least lo . restrs)
-  (apply recip-n-true 
+(define (ings-at-least lo . restrs)
+  (apply ings-in-between 
          (cons lo (cons #f restrs))))
 
 ;;; General combinators for combining recipe predicates
 
 ;; Checks whether the opposite condition is true for a set for a restriction
 ;; and a recipe.
-(define (restr-not restr)
-  (list 'restr-not restr))
+(define (restr-does-not-apply restr)
+  (list 'restr-does-not-apply restr))
 
 ;; Checks whether *all* restrictions apply to a certain recipe.
-(define (restr-all . restrs)
-  (cons 'restr-all restrs))
+(define (all-restrs-apply . restrs)
+  (cons 'all-restrs-apply restrs))
 
 ;; Checks whether *any* restrictions apply to a certain recipe.
-(define (restr-any . restrs)
-  (cons 'restr-any restrs))
+(define (any-restr-applies . restrs)
+  (cons 'any-restr-applies restrs))
 
 ;; Checks if the number of rules that are true is in [lo, hi). #f as hi
 ;; means no upper bound.
-(define (restr-n-true lo hi . restrs)
-  (cons 'restr-n-true (cons lo (cons hi restrs))))
+(define (restrictions-in-between lo hi . restrs)
+  (cons 'restrictions-in-between (cons lo (cons hi restrs))))
 
-(define (restr-at-most hi . restrs)
-  (apply restr-n-true
+(define (restrictions-at-most hi . restrs)
+  (apply restrictions-in-between
          (cons 0 (cons (+ hi 1) restrs))))
 
-(define (restr-at-least lo . restrs)
-  (apply restr-n-true 
+(define (restrictions-at-least lo . restrs)
+  (apply restrictions-in-between 
          (cons lo (cons #f restrs))))
 
 
@@ -104,29 +104,29 @@
   (let ((tags (ingredient-tags ingredient)))
     (and (not (null? tags))
          (case (car query)
-           ((ing-is) (any
+           ((is-tag) (any
                       (lambda (tag) (eqv? tag (cadr query)))
                       tags))
-           ((ing-all) (list-all (map (lambda (q)
+           ((all-tags) (list-all (map (lambda (q)
                                        (restr:check-ingredient q ingredient))
                                      (cdr query))))
-           ((ing-any) (list-any (map (lambda (q)
+           ((any-tags) (list-any (map (lambda (q)
                                        (restr:check-ingredient q ingredient))
                                    (cdr query))))
-           ((ing-not) (not (restr:check-ingredient (cadr query) ingredient)))
+           ((not-tag) (not (restr:check-ingredient (cadr query) ingredient)))
            (else (error "restr:check-ingredient invalid query" query))))))
 
 ;; Quick inline tests. TODO: move to other file
 (define pep (ingredient-by-name "thai chili pepper fresh"))
-(assert (restr:check-ingredient (ing-is 'spicy) pep))
-(assert (restr:check-ingredient (ing-not (ing-is 'pork)) pep))
-(assert (restr:check-ingredient (ing-all
-                                  (ing-is 'spicy)
-                                  (ing-is 'vegetable))
+(assert (restr:check-ingredient (is-tag 'spicy) pep))
+(assert (restr:check-ingredient (not-tag (is-tag 'pork)) pep))
+(assert (restr:check-ingredient (all-tags
+                                  (is-tag 'spicy)
+                                  (is-tag 'vegetable))
                                pep))
-(assert (restr:check-ingredient (ing-any
-                                  (ing-is 'pork) ;; false
-                                  (ing-is 'vegetable))
+(assert (restr:check-ingredient (any-tags
+                                  (is-tag 'pork) ;; false
+                                  (is-tag 'vegetable))
                                pep))
 
 ;; Check if the given condition is true for *all* ingredients in a recipe.
@@ -156,10 +156,10 @@
 ;; Checks if every a recipe satisfies the given condition.
 (define (restr:check-recipe-rule query recipe)
   (case (car query)
-    ((recip-not) (not (restr:check-recipe-rule (cadr query) recipe)))
-    ((recip-all) (restr:applies-to-all-ingredients (cadr query) recipe))
-    ((recip-any) (restr:applies-to-any-ingredients (cadr query) recipe)) 
-    ((recip-n-true) (val-in-range? (cadr query)
+    ((all-ings-are-not) (not (restr:check-recipe-rule (cadr query) recipe)))
+    ((all-ings-are-all-of) (restr:applies-to-all-ingredients (cadr query) recipe))
+    ((all-ings-are-any-of) (restr:applies-to-any-ingredients (cadr query) recipe)) 
+    ((ings-in-between) (val-in-range? (cadr query)
                                    (caddr query)
                                    (restr:count-of-valid-ingredients
                                      (cadddr query)
@@ -182,60 +182,60 @@
 ;;  #[ingredient 12 ("name" "paprika") ("tags" (spice spicy))])
 
 (assert (restr:check-recipe-rule
-          (recip-all (ing-not (ing-is 'pork)))
+          (all-ings-are-all-of (not-tag (is-tag 'pork)))
           test-spices))
 (assert (restr:check-recipe-rule
-          (recip-any (ing-is 'spicy))
+          (all-ings-are-any-of (is-tag 'spicy))
           test-spices))
 (assert (restr:check-recipe-rule
-          (recip-n-true 1 3 (ing-is 'vegetable))
+          (ings-in-between 1 3 (is-tag 'vegetable))
           test-spices))
 (assert (restr:check-recipe-rule
-          (recip-at-most 2 (ing-is 'vegetable))
+          (ings-at-most 2 (is-tag 'vegetable))
           test-spices))
 (assert (restr:check-recipe-rule
-          (recip-at-least 2 (ing-is 'vegetable))
+          (ings-at-least 2 (is-tag 'vegetable))
           test-spices))
 
 (define (restr:check-recipe query recipe)
   (case (car query)
-    ((restr-not) (not (restr:check-recipe-rule (cadr query) recipe)))
-    ((restr-all) (list-all (map
-                             (lambda (q)
-                               (restr:check-recipe-rule q recipe))
-                             (cdr query))))
-    ((restr-any) (list-any (map
-                             (lambda (q)
-                               (restr:check-recipe-rule q recipe))
-                             (cdr query))))
-    ((restr-n-true) (val-in-range?
-                      (cadr query)
-                      (caddr query)
-                      (list-count
-                        (map
-                          (lambda (q)
-                            (restr:check-recipe-rule q recipe))
-                          (cdddr query)))))
+    ((restr-does-not-apply) (not (restr:check-recipe-rule (cadr query) recipe)))
+    ((all-restrs-apply) (list-all (map
+                                   (lambda (q)
+                                     (restr:check-recipe-rule q recipe))
+                                   (cdr query))))
+    ((any-restr-applies) (list-any (map
+                                     (lambda (q)
+                                       (restr:check-recipe-rule q recipe))
+                                     (cdr query))))
+    ((restrictions-in-between) (val-in-range?
+                                 (cadr query)
+                                 (caddr query)
+                                 (list-count
+                                   (map
+                                     (lambda (q)
+                                       (restr:check-recipe-rule q recipe))
+                                     (cdddr query)))))
     (else (error "restr:check-recipe unknown query" (car query)))))
 
 ;; Quick inline tests. TODO: move to other file
 (define vegetarian
-  (restr-all
-    (recip-not (recip-any (ing-any (ing-is 'pork)
-                                   (ing-is 'beef)
-                                   (ing-is 'chicken))))
-    (recip-not (recip-any (ing-any (ing-is 'shellfish)
-                                   (ing-is 'fish))))))
+  (all-restrs-apply
+    (all-ings-are-not (all-ings-are-any-of (any-tags (is-tag 'pork))
+                                   (is-tag 'beef)
+                                   (is-tag 'chicken)))
+    (all-ings-are-not (all-ings-are-any-of (any-tags (is-tag 'shellfish))
+                                          (is-tag 'fish)))))
 (assert (restr:check-recipe vegetarian test-spices))
 
 (define halal
-  (restr-all
-    (recip-all (ing-not (ing-is 'pork)))))
+  (all-restrs-apply
+    (all-ings-are-all-of (not-tag (is-tag 'pork)))))
 (assert (restr:check-recipe halal test-spices))
 
 (define only-pork
-  (restr-all
-    (recip-all (ing-is 'pork))))
+  (all-restrs-apply
+    (all-ings-are-all-of (is-tag 'pork))))
 (assert (not (restr:check-recipe only-pork test-spices)))
 
 (define a-non-kosher-meal
@@ -246,8 +246,8 @@
     (make-recipe-item "pork tenderloin" 1.67 'tbsp))
    "definitely not the torah"))
 (define kosher
-  (restr-at-most 1
-                 (recip-any (ing-is 'dairy))
-                 (recip-any (ing-is 'pork))))
+  (restrictions-at-most 1
+                 (all-ings-are-any-of (is-tag 'dairy))
+                 (all-ings-are-any-of (is-tag 'pork))))
 (assert (restr:check-recipe kosher test-spices))
 (assert (not (restr:check-recipe kosher a-non-kosher-meal)))
