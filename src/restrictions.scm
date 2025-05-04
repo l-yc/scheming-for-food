@@ -1,14 +1,22 @@
+;; READ !!!! Scuffed AF, but the way to get this file to work seems to be to
+;; load data_loader, then recipe, then data_loader again. I'm pretty sure that
+;; the issue comes from teh fact that both data_loader and recipe load the
+;; same file, but I don't know why exactly this is an issue.
 (load "data_loader.scm")
 (load "recipe.scm")
+(load "data_loader.scm")
 
-(define (restriction? obj)
-  (and (list obj)
-       (not (null? obj))
-       (symbol? (car obj))
-       (every (disjoin symbol? restriction?) obj)))
+;;; Utils
+
+(define (list-all l)
+  (fold-left (lambda (x y) (and x y)) #t l))
+
+(define (list-any l)
+  (fold-left (lambda (x y) (or x y)) #f l))
 
 ;;; Ingredient predicates
 
+;; Check whether an ingredient has a specific tag.
 (define (ing-is tag)
   (list 'ing-is tag))
 
@@ -16,50 +24,35 @@
   (list 'ing-not condition))
 
 ;; Check whether an ingredient meets *all* the listed conditions.
-(define (ing-and . tags)
-  (cons 'ing-and tags))
-(define (ing-or . tags)
-  (cons 'ing-or tags))
+(define (ing-all . tags)
+  (cons 'ing-all tags))
+
+;; Check whether an ingredient meets *any* of the listed conditions.
+(define (ing-any . tags)
+  (cons 'ing-any tags))
 
 ;;; Recipe predicates
 
+;; Checks whether *all* ingredients in the recipe meet *all* of the listed
+;; criteria.
 (define (recip-all . restrs)
   (cons 'recip-all restrs))
+
+;; Checks whether *all* ingredients in the recipe meet *any* of the listed
+;; criteria.
 (define (recip-any . restrs)
   (cons 'recip-any restrs))
+
+;; TODO: documentation + implement this
 (define (recip-only-one . restrs)
   (cons 'recip-only-one restrs))
 
-;;; General Predicates
+;;; General combinators for combining recipe predicates
+
 (define (restr-not restr)
   (list 'not restr))
 
-;; TODO: add general restr-and and restr-or, maybe rename recip-all to recip-and
-;; and recip-any to recip-or and recip-only-one to recip-xor
-
-;; TODO: disjoint: milk and meat are disjoint
-
-;;; Some Example Queries
-
-(define (restriction:halal)
-  (restr-not (recip-any (ing-is 'pork))))
-
-(define (restriction:vegetarian)
-  (restr-not (recip-any (ing-or (ing-is 'pork)
-                                (ing-is 'beef)
-                                (ing-is 'chicken)
-                                (ing-is 'fish)
-                                (ing-is 'shellfish)))))
-
-(define (and2 x y) (and x y))
-(define (or2 x y) (or x y))
-
-(define (list:and l)
-  (fold-left and2 #t l))
-
-(define (list:or l)
-  (fold-left or2 #f l))
-
+;; Check if the given ingredient satisfies the given condition
 (define (restr:check-ingredient query ingredient)
   (let ((tags (ingredient-tags ingredient)))
     (and (not (null? tags))
@@ -67,11 +60,11 @@
            ((ing-is) (any
                       (lambda (tag) (eqv? tag (cadr query)))
                       tags))
-           ((ing-and) (list:and (map (lambda (q)
+           ((ing-all) (list-all (map (lambda (q)
                                        (restr:check-ingredient q ingredient))
                                      (cdr query))))
-           ((ing-or) (list:or (map (lambda (q)
-                                     (restr:check-ingredient q ingredient))
+           ((ing-any) (list-any (map (lambda (q)
+                                       (restr:check-ingredient q ingredient))
                                    (cdr query))))
            ((ing-not) (not (restr:check-ingredient (cadr query) ingredient)))
            (else (error "restr:check-ingredient invalid query" query))))))
@@ -80,32 +73,72 @@
 (define pep (ingredient-by-name "thai chili pepper fresh"))
 (assert (restr:check-ingredient (ing-is 'spicy) pep))
 (assert (restr:check-ingredient (ing-not (ing-is 'pork)) pep))
-(assert (restr:check-ingredient (ing-and
+(assert (restr:check-ingredient (ing-all
                                   (ing-is 'spicy)
                                   (ing-is 'vegetable))
                                pep))
-(assert (restr:check-ingredient (ing-or
+(assert (restr:check-ingredient (ing-any
                                   (ing-is 'pork) ;; false
                                   (ing-is 'vegetable))
                                pep))
 
+;; Check if the given condition is true for *all* ingredients in a recipe.
 (define (restr:applies-to-all-ingredients query recipe)
-  (list:and (map (lambda (item)
+  (list-all (map (lambda (item)
                    (restr:check-ingredient
                      query
                      (recipe-item-ingredient item)))
                  (recipe-items recipe))))
 
+;; Check if the given condition is true for *any* ingredients in a recipe.
 (define (restr:applies-to-any-ingredients query recipe)
-  (list:or (map (lambda (item)
-                  (restr:check-ingredient
-                    query
-                    (recipe-item-ingredient item)))
-                (recipe-items recipe))))
+  (list-any (map (lambda (item)
+                   (restr:check-ingredient
+                     query
+                     (recipe-item-ingredient item)))
+                 (recipe-items recipe))))
 
+;; Checks if every a recipe satisfies the given condition.
 (define (restr:check-recipe-rule query recipe)
   (case (car query)
     ((recip-all) (restr:applies-to-all-ingredients (cadr query) recipe))
     ((recip-any) (restr:applies-to-any-ingredients (cadr query) recipe)) 
     ((recip-only-one) (assert #f "unimplemented"))
     (else (error "restr:check-recipe-rule: invalid query" query))))
+
+;; Quick inline tests. TODO: move to other file
+(define test-spices
+  (make-recipe
+   "Test Spices"
+   (list
+    (make-recipe-item "black pepper" 1.67 'tbsp)
+    (make-recipe-item "garlic powder" 3.33 'tbsp)
+    (make-recipe-item "onion powder" 3.33 'tbsp)
+    (make-recipe-item "paprika" 1.67 'tbsp))
+   "da source"))
+;; (#[ingredient 3 ("name" "black pepper") ("tags" (vegetable))]
+;;  #[ingredient 6 ("name" "garlic powder") ("tags" (other))]
+;;  #[ingredient 9 ("name" "onion powder") ("tags" (vegetable))]
+;;  #[ingredient 12 ("name" "paprika") ("tags" (spice spicy))])
+
+(assert (restr:check-recipe-rule
+          (recip-all (ing-not (ing-is 'pork)))
+          test-spices))
+(assert (restr:check-recipe-rule
+          (recip-any (ing-is 'spicy))
+          test-spices))
+
+;;; Some Example Queries
+
+(define (restriction:halal)
+  (restr-not (recip-any (ing-is 'pork))))
+
+(define (restriction:vegetarian)
+  (restr-not (recip-any (ing-any (ing-is 'pork)
+                                (ing-is 'beef)
+                                (ing-is 'chicken)
+                                (ing-is 'fish)
+                                (ing-is 'shellfish)))))
+
+;; TODO: disjoint: milk and meat are disjoint (kosher),
+;; TODO: halal, vegetarian, balance
