@@ -102,19 +102,21 @@
 ;; Check if the given ingredient satisfies the given condition
 (define (restr:check-ingredient query ingredient)
   (let ((tags (ingredient-tags ingredient)))
-    (and (not (null? tags))
-         (case (car query)
-           ((is-tag) (any
-                      (lambda (tag) (eqv? tag (cadr query)))
-                      tags))
-           ((all-tags) (list-all (map (lambda (q)
-                                       (restr:check-ingredient q ingredient))
-                                     (cdr query))))
-           ((any-tags) (list-any (map (lambda (q)
-                                       (restr:check-ingredient q ingredient))
-                                   (cdr query))))
-           ((not-tag) (not (restr:check-ingredient (cadr query) ingredient)))
-           (else (error "restr:check-ingredient invalid query" query))))))
+    (if (and (not (null? tags))
+            (case (car query)
+              ((is-tag) (any
+                         (lambda (tag) (eqv? tag (cadr query)))
+                         tags))
+              ((all-tags) (list-all (map (lambda (q)
+                                          (restr:check-ingredient q ingredient))
+                                        (cdr query))))
+              ((any-tags) (list-any (map (lambda (q)
+                                          (restr:check-ingredient q ingredient))
+                                      (cdr query))))
+              ((not-tag) (not (restr:check-ingredient (cadr query) ingredient)))
+              (else (error "restr:check-ingredient invalid query" query))))
+      ingredient
+      #f)))
 
 ;; Quick inline tests. TODO: move to other file
 (define pep (ingredient-by-name "thai chili pepper fresh"))
@@ -155,16 +157,23 @@
 
 ;; Checks if every a recipe satisfies the given condition.
 (define (restr:check-recipe-rule query recipe)
-  (case (car query)
-    ((all-ings-are-not) (not (restr:check-recipe-rule (cadr query) recipe)))
-    ((all-ings-are-all-of) (restr:applies-to-all-ingredients (cadr query) recipe))
-    ((all-ings-are-any-of) (restr:applies-to-any-ingredients (cadr query) recipe)) 
-    ((ings-in-between) (val-in-range? (cadr query)
-                                   (caddr query)
-                                   (restr:count-of-valid-ingredients
-                                     (cadddr query)
-                                     recipe)))
-    (else (error "restr:check-recipe-rule: invalid query" query))))
+  (let ((query-results (map (lambda (item)
+                              (restr:check-ingredient
+                                query
+                                (recipe-item-ingredient item)))
+                            (recipe-items recipe)))))
+  (if (case (car query)
+       ((all-ings-are-not) (not (restr:check-recipe-rule (cadr query) recipe)))
+       ((all-ings-are-all-of) (restr:applies-to-all-ingredients (cadr query) recipe))
+       ((all-ings-are-any-of) (restr:applies-to-any-ingredients (cadr query) recipe)) 
+       ((ings-in-between) (val-in-range? (cadr query)
+                                      (caddr query)
+                                      (restr:count-of-valid-ingredients
+                                         (cadddr query)
+                                         recipe)))
+       (else (error "restr:check-recipe-rule: invalid query" query)))
+    recipe
+    #f))
 
 ;; Quick inline tests. TODO: move to other file
 (define test-spices
@@ -198,25 +207,27 @@
           test-spices))
 
 (define (restr:check-recipe query recipe)
-  (case (car query)
-    ((restr-does-not-apply) (not (restr:check-recipe-rule (cadr query) recipe)))
-    ((all-restrs-apply) (list-all (map
-                                   (lambda (q)
-                                     (restr:check-recipe-rule q recipe))
-                                   (cdr query))))
-    ((any-restr-applies) (list-any (map
-                                     (lambda (q)
-                                       (restr:check-recipe-rule q recipe))
-                                     (cdr query))))
-    ((restrictions-in-between) (val-in-range?
-                                 (cadr query)
-                                 (caddr query)
-                                 (list-count
-                                   (map
-                                     (lambda (q)
-                                       (restr:check-recipe-rule q recipe))
-                                     (cdddr query)))))
-    (else (error "restr:check-recipe unknown query" (car query)))))
+  (if (case (car query)
+       ((restr-does-not-apply) (not (restr:check-recipe-rule (cadr query) recipe)))
+       ((all-restrs-apply) (list-all (map
+                                      (lambda (q)
+                                        (restr:check-recipe-rule q recipe))
+                                      (cdr query))))
+       ((any-restr-applies) (list-any (map
+                                        (lambda (q)
+                                          (restr:check-recipe-rule q recipe))
+                                        (cdr query))))
+       ((restrictions-in-between) (val-in-range?
+                                    (cadr query)
+                                    (caddr query)
+                                    (list-count
+                                      (map
+                                        (lambda (q)
+                                          (restr:check-recipe-rule q recipe))
+                                        (cdddr query)))))
+       (else (error "restr:check-recipe unknown query" (car query))))
+    recipe
+    #f))
 
 ;; Quick inline tests. TODO: move to other file
 (define vegetarian
