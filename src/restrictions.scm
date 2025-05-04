@@ -85,6 +85,20 @@
 (define (restr-any . restrs)
   (cons 'restr-any restrs))
 
+;; Checks if the number of rules that are true is in [lo, hi). #f as hi
+;; means no upper bound.
+(define (restr-n-true lo hi . restrs)
+  (cons 'restr-n-true (cons lo (cons hi restrs))))
+
+(define (restr-at-most hi . restrs)
+  (apply restr-n-true
+         (cons 0 (cons (+ hi 1) restrs))))
+
+(define (restr-at-least lo . restrs)
+  (apply restr-n-true 
+         (cons lo (cons #f restrs))))
+
+
 ;; Check if the given ingredient satisfies the given condition
 (define (restr:check-ingredient query ingredient)
   (let ((tags (ingredient-tags ingredient)))
@@ -194,10 +208,17 @@
                              (lambda (q)
                                (restr:check-recipe-rule q recipe))
                              (cdr query))))
+    ((restr-n-true) (val-in-range?
+                      (cadr query)
+                      (caddr query)
+                      (list-count
+                        (map
+                          (lambda (q)
+                            (restr:check-recipe-rule q recipe))
+                          (cdddr query)))))
     (else (error "restr:check-recipe unknown query" (car query)))))
 
 ;; Quick inline tests. TODO: move to other file
-
 (define vegetarian
   (restr-all
     (recip-not (recip-any (ing-any (ing-is 'pork)
@@ -217,5 +238,16 @@
     (recip-all (ing-is 'pork))))
 (assert (not (restr:check-recipe only-pork test-spices)))
 
-;;; Some Example Queries
-;; TODO: kosher, balanced
+(define a-non-kosher-meal
+  (make-recipe
+   "this is not kosher"
+   (list
+    (make-recipe-item "milk" 1.67 'tbsp)
+    (make-recipe-item "pork tenderloin" 1.67 'tbsp))
+   "definitely not the torah"))
+(define kosher
+  (restr-at-most 1
+                 (recip-any (ing-is 'dairy))
+                 (recip-any (ing-is 'pork))))
+(assert (restr:check-recipe kosher test-spices))
+(assert (not (restr:check-recipe kosher a-non-kosher-meal)))
