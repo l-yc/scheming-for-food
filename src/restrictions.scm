@@ -11,6 +11,11 @@
 
 (define (ing-is tag)
   (list 'ing-is tag))
+
+(define (ing-not condition)
+  (list 'ing-not condition))
+
+;; Check whether an ingredient meets *all* the listed conditions.
 (define (ing-and . tags)
   (cons 'ing-and tags))
 (define (ing-or . tags)
@@ -68,11 +73,13 @@
            ((ing-or) (list:or (map (lambda (q)
                                      (restr:check-ingredient q ingredient))
                                    (cdr query))))
+           ((ing-not) (not (restr:check-ingredient (cadr query) ingredient)))
            (else (error "restr:check-ingredient invalid query" query))))))
 
 ;; Quick inline tests. TODO: move to other file
 (define pep (ingredient-by-name "thai chili pepper fresh"))
 (assert (restr:check-ingredient (ing-is 'spicy) pep))
+(assert (restr:check-ingredient (ing-not (ing-is 'pork)) pep))
 (assert (restr:check-ingredient (ing-and
                                   (ing-is 'spicy)
                                   (ing-is 'vegetable))
