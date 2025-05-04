@@ -14,6 +14,17 @@
 (define (list-any l)
   (fold-left (lambda (x y) (or x y)) #f l))
 
+(define (list-count l)
+  (cond
+    ((null? l) 0)
+    ((car l) (+ 1 (list-count (cdr l))))
+    (else (list-count (cdr l)))))
+
+(define (val-in-range? lo hi val)
+  (and (<= lo val)
+       (or (eqv? #f hi)
+           (< val hi))))
+
 ;;; Ingredient predicates
 
 ;; Check whether an ingredient has a specific tag.
@@ -43,9 +54,18 @@
 (define (recip-any . restrs)
   (cons 'recip-any restrs))
 
-;; TODO: documentation + implement this
-(define (recip-only-one . restrs)
-  (cons 'recip-only-one restrs))
+;; Checks if the number of conditions that are true is in [lo, hi). #f as hi
+;; means no upper bound.
+(define (recip-n-true lo hi . restrs)
+  (cons 'recip-n-true (cons lo (cons hi restrs))))
+
+(define (recip-at-most hi . restrs)
+  (apply recip-n-true
+         (cons 0 (cons (+ hi 1) restrs))))
+
+(define (recip-at-least lo . restrs)
+  (apply recip-n-true 
+         (cons lo (cons #f restrs))))
 
 ;;; General combinators for combining recipe predicates
 
@@ -98,12 +118,24 @@
                      (recipe-item-ingredient item)))
                  (recipe-items recipe))))
 
+;; Counts the number of ingredients for which the condition is true.
+(define (restr:count-of-valid-ingredients query recipe)
+  (list-count (map (lambda (item)
+                     (restr:check-ingredient
+                       query
+                       (recipe-item-ingredient item)))
+                   (recipe-items recipe))))
+
 ;; Checks if every a recipe satisfies the given condition.
 (define (restr:check-recipe-rule query recipe)
   (case (car query)
     ((recip-all) (restr:applies-to-all-ingredients (cadr query) recipe))
     ((recip-any) (restr:applies-to-any-ingredients (cadr query) recipe)) 
-    ((recip-only-one) (assert #f "unimplemented"))
+    ((recip-n-true) (val-in-range? (cadr query)
+                                   (caddr query)
+                                   (restr:count-of-valid-ingredients
+                                     (cadddr query)
+                                     recipe)))
     (else (error "restr:check-recipe-rule: invalid query" query))))
 
 ;; Quick inline tests. TODO: move to other file
@@ -127,6 +159,15 @@
 (assert (restr:check-recipe-rule
           (recip-any (ing-is 'spicy))
           test-spices))
+(assert (restr:check-recipe-rule
+         (recip-n-true 1 3 (ing-is 'vegetable))
+         test-spices))
+(assert (restr:check-recipe-rule
+         (recip-at-most 2 (ing-is 'vegetable))
+         test-spices))
+(assert (restr:check-recipe-rule
+         (recip-at-least 2 (ing-is 'vegetable))
+         test-spices))
 
 ;;; Some Example Queries
 
