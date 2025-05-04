@@ -44,6 +44,9 @@
 
 ;;; Recipe predicates
 
+(define (recip-not condition)
+ (list 'recip-not condition))
+
 ;; Checks whether *all* ingredients in the recipe meet *all* of the listed
 ;; criteria.
 (define (recip-all . restrs)
@@ -69,8 +72,18 @@
 
 ;;; General combinators for combining recipe predicates
 
+;; Checks whether the opposite condition is true for a set for a restriction
+;; and a recipe.
 (define (restr-not restr)
-  (list 'not restr))
+  (list 'restr-not restr))
+
+;; Checks whether *all* restrictions apply to a certain recipe.
+(define (restr-all . restrs)
+  (cons 'restr-all restrs))
+
+;; Checks whether *any* restrictions apply to a certain recipe.
+(define (restr-any . restrs)
+  (cons 'restr-any restrs))
 
 ;; Check if the given ingredient satisfies the given condition
 (define (restr:check-ingredient query ingredient)
@@ -129,6 +142,7 @@
 ;; Checks if every a recipe satisfies the given condition.
 (define (restr:check-recipe-rule query recipe)
   (case (car query)
+    ((recip-not) (not (restr:check-recipe-rule (cadr query) recipe)))
     ((recip-all) (restr:applies-to-all-ingredients (cadr query) recipe))
     ((recip-any) (restr:applies-to-any-ingredients (cadr query) recipe)) 
     ((recip-n-true) (val-in-range? (cadr query)
@@ -160,26 +174,48 @@
           (recip-any (ing-is 'spicy))
           test-spices))
 (assert (restr:check-recipe-rule
-         (recip-n-true 1 3 (ing-is 'vegetable))
-         test-spices))
+          (recip-n-true 1 3 (ing-is 'vegetable))
+          test-spices))
 (assert (restr:check-recipe-rule
-         (recip-at-most 2 (ing-is 'vegetable))
-         test-spices))
+          (recip-at-most 2 (ing-is 'vegetable))
+          test-spices))
 (assert (restr:check-recipe-rule
-         (recip-at-least 2 (ing-is 'vegetable))
-         test-spices))
+          (recip-at-least 2 (ing-is 'vegetable))
+          test-spices))
+
+(define (restr:check-recipe query recipe)
+  (case (car query)
+    ((restr-not) (not (restr:check-recipe-rule (cadr query) recipe)))
+    ((restr-all) (list-all (map
+                             (lambda (q)
+                               (restr:check-recipe-rule q recipe))
+                             (cdr query))))
+    ((restr-any) (list-any (map
+                             (lambda (q)
+                               (restr:check-recipe-rule q recipe))
+                             (cdr query))))
+    (else (error "restr:check-recipe unknown query" (car query)))))
+
+;; Quick inline tests. TODO: move to other file
+
+(define vegetarian
+  (restr-all
+    (recip-not (recip-any (ing-any (ing-is 'pork)
+                                   (ing-is 'beef)
+                                   (ing-is 'chicken))))
+    (recip-not (recip-any (ing-any (ing-is 'shellfish)
+                                   (ing-is 'fish))))))
+(assert (restr:check-recipe vegetarian test-spices))
+
+(define halal
+  (restr-all
+    (recip-all (ing-not (ing-is 'pork)))))
+(assert (restr:check-recipe halal test-spices))
+
+(define only-pork
+  (restr-all
+    (recip-all (ing-is 'pork))))
+(assert (not (restr:check-recipe only-pork test-spices)))
 
 ;;; Some Example Queries
-
-(define (restriction:halal)
-  (restr-not (recip-any (ing-is 'pork))))
-
-(define (restriction:vegetarian)
-  (restr-not (recip-any (ing-any (ing-is 'pork)
-                                (ing-is 'beef)
-                                (ing-is 'chicken)
-                                (ing-is 'fish)
-                                (ing-is 'shellfish)))))
-
-;; TODO: disjoint: milk and meat are disjoint (kosher),
-;; TODO: halal, vegetarian, balance
+;; TODO: kosher, balanced
