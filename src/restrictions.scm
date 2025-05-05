@@ -223,7 +223,8 @@
   (restr-all
     (recip-not (recip-any (ing-any (ing-is 'pork)
                                    (ing-is 'beef)
-                                   (ing-is 'chicken))))
+                                   (ing-is 'chicken)
+                                   (ing-is 'poultry))))
     (recip-not (recip-any (ing-any (ing-is 'shellfish)
                                    (ing-is 'fish))))))
 (assert (restr:check-recipe vegetarian test-spices))

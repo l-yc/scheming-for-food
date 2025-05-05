@@ -1,8 +1,10 @@
 ;(load "./sdf/manager/load")
 ;(manage 'new 'generic-procedures)
+
 (load "ingredient.scm")
 (load "recipe.scm")
 (load "data_loader.scm")
+(load "restrictions.scm")
 
 
 ;; REPL
@@ -132,6 +134,8 @@
 (define (load-query? exp)
   (tagged-list? exp 'load))
 
+(define (check-query? exp)
+  (tagged-list? exp 'check))
 
 
 ;; helpers
@@ -162,8 +166,12 @@
 
 
 ;; ingredients
+(define (get-ingredients environment)
+  (lookup-variable-value '%ingredients environment))
+
+
 (define (list-ingredients expression environment)
-  (let ((ingredients (lookup-variable-value '%ingredients environment)))
+  (let ((ingredients (get-ingredients environment)))
     (let scan ((i ingredients))
       (if (pair? i)
 	  (begin
@@ -173,7 +181,7 @@
 
   
 (define (load-ingredients expression environment)
-  (let ((filename (cadr expression)))
+  (let ((filename (car expression)))
     (let ((lines (read-sexprs-from-file filename)))
       (let ((ingredients (map (lambda (item)
 				(let ((name (car item))
@@ -187,14 +195,18 @@
 
 (define (eval-ingredients-query expression environment)
   (cond ((list-query? expression)
-	 (list-ingredients expression environment))
+	 (list-ingredients (cdr expression) environment))
 	((load-query? expression)
-	 (load-ingredients expression environment))
+	 (load-ingredients (cdr expression) environment))
 	(else 'invalid-ingredients-query)))
 
 
+(define (get-recipes environment)
+  (lookup-variable-value '%recipes environment))
+
+
 (define (list-recipes expression environment)
-  (let ((recipes (lookup-variable-value '%recipes environment)))
+  (let ((recipes (get-recipes environment)))
     (let scan ((r recipes))
       (if (pair? r)
 	  (begin
@@ -204,13 +216,12 @@
 
 
 (define (load-recipes expression environment)
-  (let ((filename (cadr expression)))
+  (let ((filename (car expression)))
     (let ((lines (read-sexprs-from-file filename)))
       (let ((recipes (map (lambda (item)
 			    (let ((name (car item))
 				  (recipe-items (cadr item))
 				  (provenance (caddr item)))
-			      (pp (list 'item name recipe-items provenance))
 			      (make-recipe name
 					   (map (lambda (row)
 						  (let ((n (car row))
@@ -226,11 +237,37 @@
 	(list (length recipes) 'recipes)))))
 
 
+(define (find-recipe-by-name name recipes)
+  (let ((result (filter (lambda (recipe)
+			  (string=? (recipe-name recipe) name))
+			recipes)))
+    (if (> (length result) 0)
+	(car result)
+	#f)))
+
+
+(define restrictions-list
+  (list (cons 'vegetarian vegetarian)))
+
+
+(define (check-recipe expression environment)
+  (let ((name (car expression))
+	(restr (cadr expression)))
+    (let ((recipe (find-recipe-by-name name (get-recipes environment)))
+	  (test (assv restr restrictions-list)))
+      (pp (list 'test recipe test))
+      (if (and recipe test)
+	  (restr:check-recipe (cdr test) recipe)
+	  'invalid-restriction))))
+
+
 (define (eval-recipes-query expression environment)
   (cond ((list-query? expression)
-	 (list-recipes expression environment))
+	 (list-recipes (cdr expression) environment))
 	((load-query? expression)
-	 (load-recipes expression environment))
+	 (load-recipes (cdr expression) environment))
+	((check-query? expression)
+	 (check-recipe (cdr expression) environment))
 	(else 'invalid-recipes-query)))
 
   
@@ -244,8 +281,13 @@
 	 
 
 (init)
+(go)
 
-
+(ingredients load "examples/ingredients.txt")
+(ingredients list)
+(recipes load "examples/recipes.txt")
+(recipes list)
+(recipes check "Crispy Baked Chicken Thighs" vegetarian)
 
 
 ;; too complicated, i think i'll just bash this
