@@ -1,5 +1,7 @@
 ;(load "./sdf/manager/load")
 ;(manage 'new 'generic-procedures)
+(load "ingredient.scm")
+(load "recipe.scm")
 (load "data_loader.scm")
 
 
@@ -122,7 +124,7 @@
   (tagged-list? exp 'ingredients))
 
 (define (recipes-query? exp)
-  (tagged-list? exp 'ingredients))
+  (tagged-list? exp 'recipes))
 
 (define (list-query? exp)
   (tagged-list? exp 'list))
@@ -144,16 +146,19 @@
 	      (loop (cons thing lines)
 		    (read-line))))))))
 
-(define (read-to-list filename)
-  (with-input-from-file filename
-    (lambda ()
-      (let loop ((lines '())
-                 (next-line (read)))
-	(if (eof-object? next-line)
-	    (reverse lines)         
-	    (loop (cons next-line lines)
-		  (read-line)))))))
 
+(define (read-all-sexprs port)
+  (let loop ((acc '()))
+    (let ((x (read port)))
+      (if (eof-object? x)
+          (reverse acc)
+          (loop (cons x acc))))))
+
+
+(define (read-sexprs-from-file filename)
+  (call-with-input-file filename
+    (lambda (port)
+      (read-all-sexprs port))))
 
 
 ;; ingredients
@@ -165,17 +170,19 @@
 	    (write-line (ingredient-name (car i)))
 	    (scan (cdr i)))))
     (list (length ingredients) 'ingredients)))
+
   
 (define (load-ingredients expression environment)
   (let ((filename (cadr expression)))
-    (let ((lines (read-to-list-by-line filename)))
+    (let ((lines (read-sexprs-from-file filename)))
       (let ((ingredients (map (lambda (item)
 				(let ((name (car item))
 				      (tags (cdr item)))
 				  (make-ingredient name tags))) lines)))
 	(set-variable-value! '%ingredients
 			     ingredients
-			     environment)))))
+			     environment)
+	(list (length ingredients) 'ingredients)))))
   
 
 (define (eval-ingredients-query expression environment)
@@ -185,17 +192,53 @@
 	 (load-ingredients expression environment))
 	(else 'invalid-ingredients-query)))
 
-(define (list-ingredients expression environment)
-  (lookup-variable-value '%recipes environment))
+
+(define (list-recipes expression environment)
+  (let ((recipes (lookup-variable-value '%recipes environment)))
+    (let scan ((r recipes))
+      (if (pair? r)
+	  (begin
+	    (write-line (recipe-name (car r)))
+	    (scan (cdr r)))))
+    (list (length recipes) 'recipes)))
+
+
+(define (load-recipes expression environment)
+  (let ((filename (cadr expression)))
+    (let ((lines (read-sexprs-from-file filename)))
+      (let ((recipes (map (lambda (item)
+			    (let ((name (car item))
+				  (recipe-items (cadr item))
+				  (provenance (caddr item)))
+			      (pp (list 'item name recipe-items provenance))
+			      (make-recipe name
+					   (map (lambda (row)
+						  (let ((n (car row))
+							(a (cadr row))
+							(u (caddr row)))
+					   	  (make-recipe-item n a u)))
+					   	recipe-items)
+					   provenance)))
+			  lines)))
+	(set-variable-value! '%recipes
+			     recipes
+			     environment)
+	(list (length recipes) 'recipes)))))
+
 
 (define (eval-recipes-query expression environment)
   (cond ((list-query? expression)
-	 (list-ingredients expression environment))
-	(else 'invalid-ingredients-query)))
+	 (list-recipes expression environment))
+	((load-query? expression)
+	 (load-recipes expression environment))
+	(else 'invalid-recipes-query)))
+
   
 (define (q:eval expression environment)
   (cond ((ingredients-query? expression)
 	 (eval-ingredients-query (cdr expression) environment))
+	((recipes-query? expression)
+	 (eval-recipes-query (cdr expression) environment))
 	(else 'invalid-query)))
 
 	 
