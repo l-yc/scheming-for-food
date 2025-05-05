@@ -116,20 +116,20 @@
 
 ;;; Recipe predicates
 
-(define (all-ings-are-not condition)
- (list 'all-ings-are-not condition))
+(define (ings-not condition)
+ (list 'ings-not condition))
 
 ;; Checks whether *all* ingredients in the recipe meet *all* of the listed
 ;; criteria.
-(define (all-ings-are-all-of . restrs)
-  (cons 'all-ings-are-all-of restrs))
-(register-all-query! 'all-ings-are-all-of)
+(define (all-ings-are . restrs)
+  (cons 'all-ings-are restrs))
+(register-all-query! 'all-ings-are)
 
 ;; Checks whether *all* ingredients in the recipe meet *any* of the listed
 ;; criteria.
-(define (all-ings-are-any-of . restrs)
-  (cons 'all-ings-are-any-of restrs))
-(register-any-query! 'all-ings-are-any-of)
+(define (any-ings-are . restrs)
+  (cons 'any-ings-are restrs))
+(register-any-query! 'any-ings-are)
 
 ;; Checks if the number of conditions that are true is in [lo, hi). #f as hi
 ;; means no upper bound.
@@ -193,8 +193,8 @@
 
 (define (restr:check-recipe-rule query recipe)
   (case (query-tag (car query))
-    ((all-ings-are-not) (not (restr:check-recipe-rule (cadr query) recipe)))
-    ((all-ings-are-all-of all-ings-are-any-of ings-in-between)
+    ((ings-not) (not (restr:check-recipe-rule (cadr query) recipe)))
+    ((all-ings-are any-ings-are ings-in-between)
      (do-query
        (car query)
        (lambda (item)
@@ -260,10 +260,10 @@
 ;;  #[ingredient 12 ("name" "paprika") ("tags" (spice spicy))])
 
 (assert (restr:check-recipe-rule
-          (all-ings-are-all-of (not-tag (is-tag 'pork)))
+          (all-ings-are (not-tag (is-tag 'pork)))
           test-spices))
 (assert (restr:check-recipe-rule
-          (all-ings-are-any-of (is-tag 'spicy))
+          (any-ings-are (is-tag 'spicy))
           test-spices))
 (assert (restr:check-recipe-rule
           (ings-in-between 1 3 (is-tag 'vegetable))
@@ -278,22 +278,22 @@
 ;; end to end, multiple restrictions
 (define vegetarian
   (all-restrs-apply
-    (all-ings-are-not (all-ings-are-any-of (any-tags (is-tag 'pork)
-                                                     (is-tag 'beef)
-                                                     (is-tag 'chicken)
-                                                     (is-tag 'poultry))))
-    (all-ings-are-not (all-ings-are-any-of (any-tags (is-tag 'shellfish)
-                                                     (is-tag 'fish))))))
+    (ings-not (any-ings-are (any-tags (is-tag 'pork)
+                                      (is-tag 'beef)
+                                      (is-tag 'chicken)
+                                      (is-tag 'poultry))))
+    (ings-not (any-ings-are (any-tags (is-tag 'shellfish)
+                                      (is-tag 'fish))))))
 (assert (restr:check-recipe vegetarian test-spices))
 
 (define halal
   (all-restrs-apply
-    (all-ings-are-all-of (not-tag (is-tag 'pork)))))
+    (all-ings-are (not-tag (is-tag 'pork)))))
 (assert (restr:check-recipe halal test-spices))
 
 (define only-pork
   (all-restrs-apply
-    (all-ings-are-all-of (is-tag 'pork))))
+    (all-ings-are (is-tag 'pork))))
 (assert (not (restr:check-recipe only-pork test-spices)))
 
 (define a-non-kosher-meal
@@ -305,7 +305,7 @@
    "definitely not the torah"))
 (define kosher
   (restrs-at-most 1
-                 (all-ings-are-any-of (is-tag 'dairy))
-                 (all-ings-are-any-of (is-tag 'pork))))
+                 (any-ings-are (is-tag 'dairy))
+                 (any-ings-are (is-tag 'pork))))
 (assert (restr:check-recipe kosher test-spices))
 (assert (not (restr:check-recipe kosher a-non-kosher-meal)))

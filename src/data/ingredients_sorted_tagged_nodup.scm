@@ -7,6 +7,7 @@
   (list
     (list "Whipped cream" 'dairy 'lactose)
     (list "butter" 'dairy 'lactose)
+    (list "buttermilk" 'dairy 'lactose)
     (list "cheddar cheese" 'dairy 'lactose)
     (list "cheddar cheese sliced" 'dairy 'lactose)
     (list "coconut milk" 'dairy 'lactose)
@@ -121,7 +122,7 @@
     (list "Tomato paste" 'vegetable)
     (list "bell pepper" 'vegetable)
     (list "bell peppers" 'vegetable)
-    (list "black pepper" 'vegetable)
+    (list "black pepper" 'vegetable 'spicy 'spice)
     (list "carrot" 'vegetable)
     (list "carrots" 'vegetable)
     (list "cayenne pepper" 'spicy 'vegetable)
@@ -444,5 +445,5 @@
     (list "waxy potatoes" 'other)
     (list "white mushrooms" 'other)
     (list "worcestershire sauce" 'other)
-    (list "zucchini" 'other)
-  ))
+    (list "zucchini" 'other)))
+  
