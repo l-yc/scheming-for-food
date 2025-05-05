@@ -134,8 +134,14 @@
 (define (load-query? exp)
   (tagged-list? exp 'load))
 
+(define (search-query? exp)
+  (tagged-list? exp 'search))
+
 (define (check-query? exp)
   (tagged-list? exp 'check))
+
+(define (filter-query? exp)
+  (tagged-list? exp 'filter))
 
 
 ;; helpers
@@ -205,14 +211,17 @@
   (lookup-variable-value '%recipes environment))
 
 
+(define (display-recipes recipes)
+  (let scan ((r recipes))
+    (if (pair? r)
+	(begin
+	  (write-line (recipe-name (car r)))
+	  (scan (cdr r)))))
+  (list (length recipes) 'recipes))
+
+  
 (define (list-recipes expression environment)
-  (let ((recipes (get-recipes environment)))
-    (let scan ((r recipes))
-      (if (pair? r)
-	  (begin
-	    (write-line (recipe-name (car r)))
-	    (scan (cdr r)))))
-    (list (length recipes) 'recipes)))
+  (display (get-recipes environment)))
 
 
 (define (load-recipes expression environment)
@@ -246,8 +255,24 @@
 	#f)))
 
 
+(define (find-recipes-by-substring needle recipes)
+  (filter (lambda (recipe)
+	    (substring? (string-upcase needle)
+			(string-upcase (recipe-name recipe))))
+	  recipes))
+
+
 (define restrictions-list
-  (list (cons 'vegetarian vegetarian)))
+  (list
+   (cons 'vegetarian vegetarian)
+   (cons 'halal halal)
+   (cons 'kosher kosher)))
+
+
+(define (search-recipes expression environment)
+  (let ((needle (car expression)))
+    (let ((recipes (get-recipes environment)))
+      (display-recipes (find-recipes-by-substring needle recipes)))))
 
 
 (define (check-recipe expression environment)
@@ -255,9 +280,19 @@
 	(restr (cadr expression)))
     (let ((recipe (find-recipe-by-name name (get-recipes environment)))
 	  (test (assv restr restrictions-list)))
-      (pp (list 'test recipe test))
       (if (and recipe test)
 	  (restr:check-recipe (cdr test) recipe)
+	  'invalid-restriction))))
+
+
+(define (filter-recipes expression environment)
+  (let ((restr (car expression)))
+    (let ((recipes (get-recipes environment))
+	  (test (assv restr restrictions-list)))
+      (if test
+	  (display-recipes
+	   (filter (lambda (recipe) (restr:check-recipe (cdr test) recipe))
+		   recipes))
 	  'invalid-restriction))))
 
 
@@ -266,8 +301,12 @@
 	 (list-recipes (cdr expression) environment))
 	((load-query? expression)
 	 (load-recipes (cdr expression) environment))
+	((search-query? expression)
+	 (search-recipes (cdr expression) environment))
 	((check-query? expression)
 	 (check-recipe (cdr expression) environment))
+	((filter-query? expression)
+	 (filter-recipes (cdr expression) environment))
 	(else 'invalid-recipes-query)))
 
   
@@ -287,7 +326,11 @@
 (ingredients list)
 (recipes load "examples/recipes.txt")
 (recipes list)
+(recipes search "chicken")
 (recipes check "Crispy Baked Chicken Thighs" vegetarian)
+(recipes filter vegetarian)
+(recipes filter halal)
+(recipes filter kosher)
 
 
 ;; too complicated, i think i'll just bash this
