@@ -353,7 +353,9 @@
 	  (display-recipes
 	   (filter (lambda (recipe) (restr:check-recipe (cdr test) recipe))
 		   recipes))
-	  'invalid-restriction))))
+	  (display-recipes
+	   (filter (lambda (recipe) (restr:check-recipe restr recipe))
+		   recipes))))))
 
 
 (define (eval-recipes-query expression environment)
@@ -397,6 +399,7 @@
 (recipes filter vegetarian)
 (recipes filter halal)
 (recipes filter kosher)
+(recipes filter (restr-all (recip-all (ing-not (ing-is poultry)))))
 
 
 ;; too complicated, i think i'll just bash this

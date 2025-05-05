@@ -20,7 +20,6 @@
     (make-recipe-item "paprika" 1.67 'tbsp)
     (make-recipe-item "salt" 3.33 'tbsp)
     (make-recipe-item "tofu" 1 'lb))
-    
    "https://dh.mit.edu/recipes/928/"))
 
 (define penne-cinque-pi-recipe
