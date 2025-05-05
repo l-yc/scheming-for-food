@@ -9,6 +9,7 @@
   (and (pair? r)
        (eq? 'linear (car r))
        (number? (cdr r))))
+(define (linear-scaling-rule-factor r) (cdr r))
 (define (scaling-rule? r)
   (or (constant-scaling-rule? r)
       (linear-scaling-rule? r)))

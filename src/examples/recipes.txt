@@ -3,7 +3,7 @@
   ("chicken thighs" 12 lb)
   ("cornstarch" 0.62 cup)
   ("garlic powder" 3.33 tbsp)
-  ("olive oil" 0.62 cup)
+  ("olive oil" 0.62 cup constant)
   ("onion powder" 3.33 tbsp)
   ("paprika" 1.67 tbsp)
   ("salt" 3.33 tbsp)

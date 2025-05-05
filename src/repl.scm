@@ -137,8 +137,14 @@
 (define (search-query? exp)
   (tagged-list? exp 'search))
 
+(define (show-query? exp)
+  (tagged-list? exp 'show))
+
 (define (check-query? exp)
   (tagged-list? exp 'check))
+
+(define (scale-query? exp)
+  (tagged-list? exp 'scale))
 
 (define (filter-query? exp)
   (tagged-list? exp 'filter))
@@ -221,7 +227,7 @@
 
   
 (define (list-recipes expression environment)
-  (display (get-recipes environment)))
+  (display-recipes (get-recipes environment)))
 
 
 (define (load-recipes expression environment)
@@ -233,10 +239,11 @@
 				  (provenance (caddr item)))
 			      (make-recipe name
 					   (map (lambda (row)
-						  (let ((n (car row))
-							(a (cadr row))
-							(u (caddr row)))
-					   	  (make-recipe-item n a u)))
+						  (apply make-recipe-item row))
+						  ;(let ((n (car row))
+						  ;	(a (cadr row))
+						  ;	(u (caddr row)))
+					   	  ;(make-recipe-item n a u)))
 					   	recipe-items)
 					   provenance)))
 			  lines)))
@@ -275,6 +282,32 @@
       (display-recipes (find-recipes-by-substring needle recipes)))))
 
 
+(define (display-recipe recipe)
+  (display "Recipe: ")
+  (display (recipe-name recipe))
+  (newline)
+  (display "---")
+  (newline)
+  (let scan ((items (recipe-items recipe)))
+    (if (pair? items)
+	(begin
+	  (display "* ")
+	  (display (ingredient-name (recipe-item-ingredient (car items))))
+	  (display ", ")
+	  (display (quantity-amount (recipe-item-quantity (car items))))
+	  (display " ")
+	  (display (quantity-unit (recipe-item-quantity (car items))))
+	  (newline)
+	  (scan (cdr items)))))
+  (list (length (recipe-items recipe)) 'items))
+
+  
+(define (show-recipe expression environment)
+  (let ((name (car expression)))
+    (let ((recipe (find-recipe-by-name name (get-recipes environment))))
+      (display-recipe recipe))))
+
+
 (define (check-recipe expression environment)
   (let ((name (car expression))
 	(restr (cadr expression)))
@@ -283,6 +316,33 @@
       (if (and recipe test)
 	  (restr:check-recipe (cdr test) recipe)
 	  'invalid-restriction))))
+
+
+(define (scale-recipe-item item scale)
+  (let ((ing (recipe-item-ingredient item))
+	(qty (recipe-item-quantity item))
+	(rule (recipe-item-scaling-rule item)))
+    (cond ((constant-scaling-rule? rule)
+	   item)
+	  ((linear-scaling-rule? rule)
+	   (make-recipe-item (ingredient-name ing)
+			     (* (quantity-amount qty)
+				(linear-scaling-rule-factor rule)
+				scale)
+			     (quantity-unit qty)))
+	  (else 'scaling-rule-not-implemented))))
+
+  
+(define (scale-recipe expression environment)
+  (let ((name (car expression))
+	(scale (cadr expression)))
+    (let ((recipe (find-recipe-by-name name (get-recipes environment))))
+      (let ((scaled-items
+	     (map (lambda (item) (scale-recipe-item item scale))
+		  (recipe-items recipe))))
+	(display-recipe (make-recipe (recipe-name recipe)
+				     scaled-items
+				     (recipe-provenance recipe)))))))
 
 
 (define (filter-recipes expression environment)
@@ -303,8 +363,12 @@
 	 (load-recipes (cdr expression) environment))
 	((search-query? expression)
 	 (search-recipes (cdr expression) environment))
+	((show-query? expression)
+	 (show-recipe (cdr expression) environment))
 	((check-query? expression)
 	 (check-recipe (cdr expression) environment))
+	((scale-query? expression)
+	 (scale-recipe (cdr expression) environment))
 	((filter-query? expression)
 	 (filter-recipes (cdr expression) environment))
 	(else 'invalid-recipes-query)))
@@ -327,7 +391,9 @@
 (recipes load "examples/recipes.txt")
 (recipes list)
 (recipes search "chicken")
-(recipes check "Crispy Baked Chicken Thighs" vegetarian)
+(recipes check "Crispy Baked Chicken Thighs" halal)
+(recipes show "Crispy Baked Chicken Thighs")
+(recipes scale "Crispy Baked Chicken Thighs" 2) ; note olive oil unchanged!
 (recipes filter vegetarian)
 (recipes filter halal)
 (recipes filter kosher)
